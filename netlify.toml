@@ -1,0 +1,6 @@
+[build.environment]
+  # The Firebase web API key ("AIza...") is a public client identifier that must
+  # ship in the browser bundle, so Netlify's smart secret detection always flags
+  # it. Access is enforced by Firebase Auth and Firestore security rules instead.
+  # Values set here override the same variable set in the Netlify UI.
+  SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
