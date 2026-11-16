@@ -1,0 +1,447 @@
+{
+  "entities": {
+    "UserAccount": {
+      "title": "UserAccount",
+      "description": "Private owner record anchoring user-scoped treasury subcollections.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128,
+          "description": "Firebase Auth UID of the account owner."
+        },
+        "displayName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 180
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "createdAt", "updatedAt"]
+    },
+    "WorkspaceSettings": {
+      "title": "WorkspaceSettings",
+      "description": "Startup treasury allocation weights, base currency, and alert thresholds.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "companyName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "baseCurrency": {
+          "type": "string",
+          "enum": ["KES", "USD", "EUR", "GBP"],
+          "maxLength": 8
+        },
+        "taxReserveRate": {
+          "type": "number"
+        },
+        "essentialsPct": {
+          "type": "number"
+        },
+        "debtPct": {
+          "type": "number"
+        },
+        "saveInvestPct": {
+          "type": "number"
+        },
+        "guiltFreePct": {
+          "type": "number"
+        },
+        "essentialsMaterialsTarget": {
+          "type": "number"
+        },
+        "essentialsTransportFoodTarget": {
+          "type": "number"
+        },
+        "essentialsSalariesTarget": {
+          "type": "number"
+        },
+        "essentialsSchoolFeesTarget": {
+          "type": "number"
+        },
+        "savingsWeight": {
+          "type": "number"
+        },
+        "growthWeight": {
+          "type": "number"
+        },
+        "discretionaryWeight": {
+          "type": "number"
+        },
+        "lowLiquidityThresholdPct": {
+          "type": "number"
+        },
+        "savingsMilestoneTarget": {
+          "type": "number"
+        },
+        "autoBackupEnabled": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "companyName",
+        "baseCurrency",
+        "taxReserveRate",
+        "essentialsPct",
+        "debtPct",
+        "saveInvestPct",
+        "guiltFreePct",
+        "essentialsMaterialsTarget",
+        "essentialsTransportFoodTarget",
+        "essentialsSalariesTarget",
+        "essentialsSchoolFeesTarget",
+        "savingsWeight",
+        "growthWeight",
+        "discretionaryWeight",
+        "lowLiquidityThresholdPct",
+        "savingsMilestoneTarget",
+        "autoBackupEnabled",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MonthlyStatement": {
+      "title": "MonthlyStatement",
+      "description": "Historical monthly financial statement used for T-2 baseline lookup and tax compliance.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "monthKey": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}$",
+          "maxLength": 7
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["KES", "USD", "EUR", "GBP"],
+          "maxLength": 8
+        },
+        "totalRevenue": {
+          "type": "number"
+        },
+        "taxSegregated": {
+          "type": "number"
+        },
+        "businessMaterials": {
+          "type": "number"
+        },
+        "transportation": {
+          "type": "number"
+        },
+        "workerSalaries": {
+          "type": "number"
+        },
+        "sistersSchoolFees": {
+          "type": "number"
+        },
+        "pendingLoansDebts": {
+          "type": "number"
+        },
+        "savingsAllocated": {
+          "type": "number"
+        },
+        "growthAllocated": {
+          "type": "number"
+        },
+        "discretionarySpent": {
+          "type": "number"
+        },
+        "closingLiquidity": {
+          "type": "number"
+        },
+        "isClosed": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "monthKey",
+        "currency",
+        "totalRevenue",
+        "taxSegregated",
+        "businessMaterials",
+        "transportation",
+        "workerSalaries",
+        "sistersSchoolFees",
+        "pendingLoansDebts",
+        "savingsAllocated",
+        "growthAllocated",
+        "discretionarySpent",
+        "closingLiquidity",
+        "isClosed",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "BudgetCycle": {
+      "title": "BudgetCycle",
+      "description": "Active monthly budget cycle anchored to T-2 baseline and interactive debt check.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "cycleMonth": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}$",
+          "maxLength": 7
+        },
+        "baselineMonth": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}$",
+          "maxLength": 7
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["KES", "USD", "EUR", "GBP"],
+          "maxLength": 8
+        },
+        "debtCheckCompleted": {
+          "type": "boolean"
+        },
+        "confirmedDebtAmount": {
+          "type": "number"
+        },
+        "debtNote": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "lastDebtCheckAt": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "cycleMonth",
+        "baselineMonth",
+        "currency",
+        "debtCheckCompleted",
+        "confirmedDebtAmount",
+        "debtNote",
+        "lastDebtCheckAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "LedgerTransaction": {
+      "title": "LedgerTransaction",
+      "description": "Individual multi-currency income or expenditure entry in the treasury ledger.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "cycleMonth": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}$",
+          "maxLength": 7
+        },
+        "type": {
+          "type": "string",
+          "enum": ["income", "expense"],
+          "maxLength": 16
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "client_revenue",
+            "business_materials",
+            "transportation",
+            "worker_salaries",
+            "sisters_school_fees",
+            "pending_loans_debts",
+            "savings_vault",
+            "growth_reinvestment",
+            "discretionary"
+          ],
+          "maxLength": 40
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string",
+          "enum": ["KES", "USD", "EUR", "GBP"],
+          "maxLength": 8
+        },
+        "fxRateToBase": {
+          "type": "number"
+        },
+        "baseAmount": {
+          "type": "number"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "occurredAt": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "cycleMonth",
+        "type",
+        "category",
+        "amount",
+        "currency",
+        "fxRateToBase",
+        "baseAmount",
+        "description",
+        "occurredAt",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CloudBackup": {
+      "title": "CloudBackup",
+      "description": "Automated or manual encrypted-checksum snapshot metadata for statements and tax records.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "snapshotMonth": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}$",
+          "maxLength": 7
+        },
+        "baseCurrency": {
+          "type": "string",
+          "enum": ["KES", "USD", "EUR", "GBP"],
+          "maxLength": 8
+        },
+        "statementCount": {
+          "type": "number"
+        },
+        "transactionCount": {
+          "type": "number"
+        },
+        "totalTaxReserved": {
+          "type": "number"
+        },
+        "totalLiquidity": {
+          "type": "number"
+        },
+        "checksum": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "triggerSource": {
+          "type": "string",
+          "enum": ["auto", "manual"],
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ownerId",
+        "snapshotMonth",
+        "baseCurrency",
+        "statementCount",
+        "transactionCount",
+        "totalTaxReserved",
+        "totalLiquidity",
+        "checksum",
+        "triggerSource",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserAccount" },
+      "description": "Owner root document storing private account profile."
+    },
+    "/users/{userId}/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/WorkspaceSettings" },
+      "description": "Treasury configuration document (e.g. default)."
+    },
+    "/users/{userId}/statements/{monthKey}": {
+      "schema": { "$ref": "#/entities/MonthlyStatement" },
+      "description": "Historical monthly statements indexed by YYYY-MM for T-2 lookup."
+    },
+    "/users/{userId}/cycles/{monthKey}": {
+      "schema": { "$ref": "#/entities/BudgetCycle" },
+      "description": "Active monthly budget cycles indexed by YYYY-MM."
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/LedgerTransaction" },
+      "description": "Multi-currency revenue and expense ledger entries."
+    },
+    "/users/{userId}/backups/{backupId}": {
+      "schema": { "$ref": "#/entities/CloudBackup" },
+      "description": "Automated and manual cloud backup audit snapshots."
+    }
+  }
+}

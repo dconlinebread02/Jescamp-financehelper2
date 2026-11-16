@@ -1,0 +1,356 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core primitives
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isSignedIn()
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true;
+    }
+
+    function parentUserExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function isValidCurrency(val) {
+      return val is string && val.size() <= 8 && val in ['KES', 'USD', 'EUR', 'GBP'];
+    }
+
+    function isValidMonthKey(val) {
+      return val is string && val.size() == 7 && val.matches('^\\d{4}-\\d{2}$');
+    }
+
+    function isNonNegNum(val) {
+      return (val is int || val is float) && val >= 0 && val <= 1000000000000;
+    }
+
+    function isPosNum(val) {
+      return (val is int || val is float) && val > 0 && val <= 1000000000000;
+    }
+
+    // Entity validation blueprints
+    function isValidUserAccount(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid == userId && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 120
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 180
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidWorkspaceSettings(data, userId) {
+      return data.keys().hasAll([
+          'ownerId', 'companyName', 'baseCurrency', 'taxReserveRate',
+          'essentialsPct', 'debtPct', 'saveInvestPct', 'guiltFreePct',
+          'essentialsMaterialsTarget', 'essentialsTransportFoodTarget',
+          'essentialsSalariesTarget', 'essentialsSchoolFeesTarget',
+          'savingsWeight', 'growthWeight', 'discretionaryWeight',
+          'lowLiquidityThresholdPct', 'savingsMilestoneTarget', 'autoBackupEnabled',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'companyName', 'baseCurrency', 'taxReserveRate',
+          'essentialsPct', 'debtPct', 'saveInvestPct', 'guiltFreePct',
+          'essentialsMaterialsTarget', 'essentialsTransportFoodTarget',
+          'essentialsSalariesTarget', 'essentialsSchoolFeesTarget',
+          'savingsWeight', 'growthWeight', 'discretionaryWeight',
+          'lowLiquidityThresholdPct', 'savingsMilestoneTarget', 'autoBackupEnabled',
+          'createdAt', 'updatedAt'
+        ])
+        && data.ownerId is string && data.ownerId == userId && isValidId(data.ownerId)
+        && data.companyName is string && data.companyName.size() >= 1 && data.companyName.size() <= 100
+        && isValidCurrency(data.baseCurrency)
+        && (data.taxReserveRate is int || data.taxReserveRate is float) && data.taxReserveRate >= 0 && data.taxReserveRate <= 0.6
+        && (data.essentialsPct is int || data.essentialsPct is float) && data.essentialsPct >= 0 && data.essentialsPct <= 1
+        && (data.debtPct is int || data.debtPct is float) && data.debtPct >= 0 && data.debtPct <= 1
+        && (data.saveInvestPct is int || data.saveInvestPct is float) && data.saveInvestPct >= 0 && data.saveInvestPct <= 1
+        && (data.guiltFreePct is int || data.guiltFreePct is float) && data.guiltFreePct >= 0 && data.guiltFreePct <= 1
+        && isNonNegNum(data.essentialsMaterialsTarget)
+        && isNonNegNum(data.essentialsTransportFoodTarget)
+        && isNonNegNum(data.essentialsSalariesTarget)
+        && isNonNegNum(data.essentialsSchoolFeesTarget)
+        && (data.savingsWeight is int || data.savingsWeight is float) && data.savingsWeight >= 0 && data.savingsWeight <= 1
+        && (data.growthWeight is int || data.growthWeight is float) && data.growthWeight >= 0 && data.growthWeight <= 1
+        && (data.discretionaryWeight is int || data.discretionaryWeight is float) && data.discretionaryWeight >= 0 && data.discretionaryWeight <= 1
+        && (data.lowLiquidityThresholdPct is int || data.lowLiquidityThresholdPct is float) && data.lowLiquidityThresholdPct >= 0 && data.lowLiquidityThresholdPct <= 100
+        && isNonNegNum(data.savingsMilestoneTarget)
+        && data.autoBackupEnabled is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMonthlyStatement(data, userId, monthKey) {
+      return data.keys().hasAll([
+          'ownerId', 'monthKey', 'currency', 'totalRevenue', 'taxSegregated',
+          'businessMaterials', 'transportation', 'workerSalaries',
+          'sistersSchoolFees', 'pendingLoansDebts', 'savingsAllocated',
+          'growthAllocated', 'discretionarySpent', 'closingLiquidity',
+          'isClosed', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'monthKey', 'currency', 'totalRevenue', 'taxSegregated',
+          'businessMaterials', 'transportation', 'workerSalaries',
+          'sistersSchoolFees', 'pendingLoansDebts', 'savingsAllocated',
+          'growthAllocated', 'discretionarySpent', 'closingLiquidity',
+          'isClosed', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerId is string && data.ownerId == userId && isValidId(data.ownerId)
+        && isValidMonthKey(data.monthKey) && data.monthKey == monthKey
+        && isValidCurrency(data.currency)
+        && isNonNegNum(data.totalRevenue)
+        && isNonNegNum(data.taxSegregated)
+        && isNonNegNum(data.businessMaterials)
+        && isNonNegNum(data.transportation)
+        && isNonNegNum(data.workerSalaries)
+        && isNonNegNum(data.sistersSchoolFees)
+        && isNonNegNum(data.pendingLoansDebts)
+        && isNonNegNum(data.savingsAllocated)
+        && isNonNegNum(data.growthAllocated)
+        && isNonNegNum(data.discretionarySpent)
+        && (data.closingLiquidity is int || data.closingLiquidity is float) && data.closingLiquidity >= -1000000000000 && data.closingLiquidity <= 1000000000000
+        && data.isClosed is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBudgetCycle(data, userId, monthKey) {
+      return data.keys().hasAll([
+          'ownerId', 'cycleMonth', 'baselineMonth', 'currency',
+          'debtCheckCompleted', 'confirmedDebtAmount', 'debtNote',
+          'lastDebtCheckAt', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'cycleMonth', 'baselineMonth', 'currency',
+          'debtCheckCompleted', 'confirmedDebtAmount', 'debtNote',
+          'lastDebtCheckAt', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerId is string && data.ownerId == userId && isValidId(data.ownerId)
+        && isValidMonthKey(data.cycleMonth) && data.cycleMonth == monthKey
+        && isValidMonthKey(data.baselineMonth)
+        && isValidCurrency(data.currency)
+        && data.debtCheckCompleted is bool
+        && isNonNegNum(data.confirmedDebtAmount)
+        && data.debtNote is string && data.debtNote.size() <= 240
+        && data.lastDebtCheckAt is string && data.lastDebtCheckAt.size() <= 64
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidLedgerTransaction(data, userId) {
+      return data.keys().hasAll([
+          'ownerId', 'cycleMonth', 'type', 'category', 'amount',
+          'currency', 'fxRateToBase', 'baseAmount', 'description',
+          'occurredAt', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'cycleMonth', 'type', 'category', 'amount',
+          'currency', 'fxRateToBase', 'baseAmount', 'description',
+          'occurredAt', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerId is string && data.ownerId == userId && isValidId(data.ownerId)
+        && isValidMonthKey(data.cycleMonth)
+        && data.type is string && data.type.size() <= 16 && data.type in ['income', 'expense']
+        && data.category is string && data.category.size() <= 40 && data.category in [
+          'client_revenue',
+          'business_materials',
+          'transportation',
+          'worker_salaries',
+          'sisters_school_fees',
+          'pending_loans_debts',
+          'savings_vault',
+          'growth_reinvestment',
+          'discretionary'
+        ]
+        && isPosNum(data.amount)
+        && isValidCurrency(data.currency)
+        && isPosNum(data.fxRateToBase)
+        && isPosNum(data.baseAmount)
+        && data.description is string && data.description.size() >= 1 && data.description.size() <= 240
+        && data.occurredAt is string && data.occurredAt.size() >= 10 && data.occurredAt.size() <= 32
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCloudBackup(data, userId) {
+      return data.keys().hasAll([
+          'ownerId', 'snapshotMonth', 'baseCurrency', 'statementCount',
+          'transactionCount', 'totalTaxReserved', 'totalLiquidity',
+          'checksum', 'triggerSource', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerId', 'snapshotMonth', 'baseCurrency', 'statementCount',
+          'transactionCount', 'totalTaxReserved', 'totalLiquidity',
+          'checksum', 'triggerSource', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerId is string && data.ownerId == userId && isValidId(data.ownerId)
+        && isValidMonthKey(data.snapshotMonth)
+        && isValidCurrency(data.baseCurrency)
+        && isNonNegNum(data.statementCount)
+        && isNonNegNum(data.transactionCount)
+        && isNonNegNum(data.totalTaxReserved)
+        && (data.totalLiquidity is int || data.totalLiquidity is float) && data.totalLiquidity >= -1000000000000 && data.totalLiquidity <= 1000000000000
+        && data.checksum is string && data.checksum.size() >= 4 && data.checksum.size() <= 64
+        && data.triggerSource is string && data.triggerSource.size() <= 16 && data.triggerSource in ['auto', 'manual']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Owner root profile
+    match /users/{userId} {
+      allow get: if isVerifiedOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isVerifiedOwner(userId)
+        && isValidId(userId)
+        && isValidUserAccount(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedOwner(userId)
+        && isValidId(userId)
+        && isValidUserAccount(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'updatedAt']);
+      allow delete: if false;
+
+      match /settings/{settingId} {
+        allow get: if isVerifiedOwner(userId) && isValidId(settingId);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(settingId)
+          && isValidWorkspaceSettings(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(settingId)
+          && isValidWorkspaceSettings(incoming(), userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'companyName', 'baseCurrency', 'taxReserveRate',
+            'essentialsPct', 'debtPct', 'saveInvestPct', 'guiltFreePct',
+            'essentialsMaterialsTarget', 'essentialsTransportFoodTarget',
+            'essentialsSalariesTarget', 'essentialsSchoolFeesTarget',
+            'savingsWeight', 'growthWeight', 'discretionaryWeight',
+            'lowLiquidityThresholdPct', 'savingsMilestoneTarget',
+            'autoBackupEnabled', 'updatedAt'
+          ])
+          && parentUserExists(userId);
+        allow delete: if false;
+      }
+
+      match /statements/{monthKey} {
+        allow get: if isVerifiedOwner(userId) && isValidMonthKey(monthKey);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidMonthKey(monthKey)
+          && isValidMonthlyStatement(incoming(), userId, monthKey)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+        allow update: if isVerifiedOwner(userId)
+          && isValidMonthKey(monthKey)
+          && isValidMonthlyStatement(incoming(), userId, monthKey)
+          && existing().isClosed == false
+          && incoming().ownerId == existing().ownerId
+          && incoming().monthKey == existing().monthKey
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'currency', 'totalRevenue', 'taxSegregated',
+            'businessMaterials', 'transportation', 'workerSalaries',
+            'sistersSchoolFees', 'pendingLoansDebts', 'savingsAllocated',
+            'growthAllocated', 'discretionarySpent', 'closingLiquidity',
+            'isClosed', 'updatedAt'
+          ])
+          && parentUserExists(userId);
+        allow delete: if isVerifiedOwner(userId) && isValidMonthKey(monthKey);
+      }
+
+      match /cycles/{monthKey} {
+        allow get: if isVerifiedOwner(userId) && isValidMonthKey(monthKey);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidMonthKey(monthKey)
+          && isValidBudgetCycle(incoming(), userId, monthKey)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+        allow update: if isVerifiedOwner(userId)
+          && isValidMonthKey(monthKey)
+          && isValidBudgetCycle(incoming(), userId, monthKey)
+          && incoming().ownerId == existing().ownerId
+          && incoming().cycleMonth == existing().cycleMonth
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'baselineMonth', 'currency', 'debtCheckCompleted',
+            'confirmedDebtAmount', 'debtNote', 'lastDebtCheckAt', 'updatedAt'
+          ])
+          && parentUserExists(userId);
+        allow delete: if false;
+      }
+
+      match /transactions/{transactionId} {
+        allow get: if isVerifiedOwner(userId) && isValidId(transactionId);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(transactionId)
+          && isValidLedgerTransaction(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+        allow update: if isVerifiedOwner(userId)
+          && isValidId(transactionId)
+          && isValidLedgerTransaction(incoming(), userId)
+          && incoming().ownerId == existing().ownerId
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'cycleMonth', 'type', 'category', 'amount', 'currency',
+            'fxRateToBase', 'baseAmount', 'description', 'occurredAt', 'updatedAt'
+          ])
+          && parentUserExists(userId);
+        allow delete: if isVerifiedOwner(userId) && isValidId(transactionId);
+      }
+
+      match /backups/{backupId} {
+        allow get: if isVerifiedOwner(userId) && isValidId(backupId);
+        allow list: if isVerifiedOwner(userId) && resource.data.ownerId == request.auth.uid;
+        allow create: if isVerifiedOwner(userId)
+          && isValidId(backupId)
+          && isValidCloudBackup(incoming(), userId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && parentUserExists(userId);
+        allow update: if false;
+        allow delete: if isVerifiedOwner(userId) && isValidId(backupId);
+      }
+    }
+  }
+}
